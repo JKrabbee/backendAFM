@@ -1,0 +1,17 @@
+{
+  "name": "backendafm",
+  "version": "1.0.0",
+  "main": "index.js",
+  "author": "JKrabbee <contatokrabbe@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "sucrase": "^3.32.0"
+  },
+  "scripts": {
+    "dev": "nodemon src/index.js"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.22"
+  }
+}
