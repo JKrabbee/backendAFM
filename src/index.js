@@ -6,6 +6,15 @@ app.listen(8090, () => console.log("Servidor iniciado"));
    
 //DATABASE
 const listaUsuarios = [];
+
+//CONFIGURAÇÃO DO CORS
+app.use((request, response, next) => {
+    response.header('Access-Control-Allow-Origin', '*'); // Permite qualquer origem
+    // res.header('Access-Control-Allow-Origin', 'http://seu-domínio.com'); // Permite uma origem específica
+    response.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+    response.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    next();
+  });
 //CRIAR USUARIO
 app.post('/usuarios', (request, response) => {
     const dados = request.body
