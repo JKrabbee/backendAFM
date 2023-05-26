@@ -1,8 +1,14 @@
 import jwt from 'jsonwebtoken';
+import {listaUsuarios} from '../index.js'
+
+const chaveSecreta = '8Z!9X$7Y@6W#5V%4U^3T&2S*1R(0Q)P_O+N=M-L;K:J<IH>G&F%E$D#C@B!A';
 
 const verificarToken = (req, res, next) => {
-  const token = req.headers.authorization;
+  const authorization = req.headers.authorization
+  let token = authorization.split(' ')
+  token = token[1]
 
+  // console.log(token);
   // Verificar se a rota atual é a rota de criação de usuários
   if (req.path === '/usuarios/cadastrar') {
     // Neste caso, não é necessário fornecer um token
@@ -24,7 +30,7 @@ const verificarToken = (req, res, next) => {
     // Verifique se o usuário está conectado
     const usuarioConectado = listaUsuarios.find((user) => user.id === usuarioId);
 
-    if (!usuarioConectado || !usuarioConectado.conectado) {
+    if (!usuarioConectado) {
       return res.status(401).json({
         sucesso: false,
         mensagem: 'Usuário não encontrado ou não está conectado'
@@ -34,6 +40,7 @@ const verificarToken = (req, res, next) => {
     req.usuarioId = usuarioId;
     next();
   } catch (error) {
+    console.log(error);
     return res.status(401).json({
       sucesso: false,
       mensagem: 'Token inválido'

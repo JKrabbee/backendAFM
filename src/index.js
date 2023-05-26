@@ -12,7 +12,7 @@ const chaveSecreta = '8Z!9X$7Y@6W#5V%4U^3T&2S*1R(0Q)P_O+N=M-L;K:J<IH>G&F%E$D#C@B
 app.listen(8090, () => console.log("Servidor iniciado"));
    
 //DATABASE
-const listaUsuarios = [];
+export const listaUsuarios = [];
 
 //CONFIGURAÇÃO DO CORS
 app.use((request, response, next) => {
@@ -24,7 +24,7 @@ app.use((request, response, next) => {
   });
 
 //CRIAR USUARIO
-app.post('/usuarios/cadastrar', verificarToken, (request, response) => {
+app.post('/usuarios/cadastrar', (request, response) => {
     const dados = request.body
 
     if (!dados.email || !dados.email.includes('@') || !dados.email.includes('.com')){
