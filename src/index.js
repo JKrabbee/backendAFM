@@ -63,6 +63,8 @@ app.post('/usuarios/cadastrar', verificarToken, (request, response) => {
     // Gerar o token
     const token = jwt.sign({ id: novoUsuario.id }, chaveSecreta);
 
+    novoUsuario.token = token;
+
     return response.status(201).json({
         sucesso: true,
         mensagem: 'Usuario cadastrado com sucesso!',
@@ -71,7 +73,7 @@ app.post('/usuarios/cadastrar', verificarToken, (request, response) => {
 });
 
 //LOGIN
-app.post('/usuarios/login', gerarERenovarToken, (request, response) => {
+app.post('/usuarios/login', (request, response) => {
     const login = request.body;
 
     const usuarioCadastrado = listaUsuarios.find(
@@ -90,7 +92,7 @@ app.post('/usuarios/login', gerarERenovarToken, (request, response) => {
     // Verifica se o token do usuário foi excluído ou está inválido
     if (!token) {
         // Gera um novo token para o usuário
-        token = gerarNovoToken(usuarioCadastrado.id); 
+        token = gerarERenovarToken(usuarioCadastrado.id); 
         // Atualiza o token no objeto de usuário
         usuarioCadastrado.token = token;
     }
