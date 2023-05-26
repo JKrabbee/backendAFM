@@ -1,6 +1,13 @@
-import express, { query } from 'express';
+import express from 'express';
+import jwt from 'jsonwebtoken';
+import verificarToken from './middlewares/verificarToken';
+import gerarERenovarToken from './middlewares/gerarToken';
+
 const app = express();
 app.use(express.json());
+
+//Chave secreta
+const chaveSecreta = '8Z!9X$7Y@6W#5V%4U^3T&2S*1R(0Q)P_O+N=M-L;K:J<IH>G&F%E$D#C@B!A';
 
 app.listen(8090, () => console.log("Servidor iniciado"));
    
@@ -15,8 +22,9 @@ app.use((request, response, next) => {
     response.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
     next();
   });
+
 //CRIAR USUARIO
-app.post('/usuarios', (request, response) => {
+app.post('/usuarios/cadastrar', verificarToken, (request, response) => {
     const dados = request.body
 
     if (!dados.email || !dados.email.includes('@') || !dados.email.includes('.com')){
@@ -52,48 +60,57 @@ app.post('/usuarios', (request, response) => {
 
     listaUsuarios.push(novoUsuario)
 
+    // Gerar o token
+    const token = jwt.sign({ id: novoUsuario.id }, chaveSecreta);
+
     return response.status(201).json({
         sucesso: true,
-        mensagem: 'Usuario cadastrado com sucesso!'
-    })
+        mensagem: 'Usuario cadastrado com sucesso!',
+        token: token
+    });
 });
+
 //LOGIN
-app.post('/login', (request, response) => {
+app.post('/usuarios/login', (request, response) => {
     const login = request.body;
 
     const usuarioCadastrado = listaUsuarios.find(
         (user) => user.email === login.email && user.password === login.password
     );
-    
+
     if (!usuarioCadastrado) {
         return response.status(400).json({
             sucesso: false,
-            mensagem: `Usuário não cadastrado`
-        })
+            mensagem: 'Usuário não cadastrado'
+        });
     }
 
-    listaUsuarios.forEach((user) => {
-        user.conectado = false
+    let token = usuarioCadastrado.token; // Obtém o token do usuário cadastrado
 
-        if (user.id === usuarioCadastrado.id) {
-            user.conectado = true;
-        }
-    });
+    // Verifica se o token do usuário foi excluído ou está inválido
+    if (!token) {
+        // Gera um novo token para o usuário
+        token = gerarNovoToken(usuarioCadastrado.id); 
+        // Atualiza o token no objeto de usuário
+        usuarioCadastrado.token = token;
+    }
 
     return response.status(200).json({
         sucesso: true,
-        mensagem: `Usuário conectado!`
-    })
+        mensagem: 'Usuário conectado!',
+        token: token
+    });
+});
 
-})
 //CRIAR RECADOS
-app.post('/recados', (request, response) => {
-    const usuarioConectado = listaUsuarios.findIndex(
-        (user) => user.conectado === true
-    );
+app.post('/recados', verificarToken, (request, response) => {
+    const usuarioId = request.usuarioId;
+
+    // Encontra o usuário com base no ID
+    const usuarioConectado = listaUsuarios.find((user) => user.id === usuarioId);
 
     // Verifica se o usuário está conectado
-    if (usuarioConectado === -1 || !listaUsuarios[usuarioConectado]) {
+    if (!usuarioConectado) {
         return response.status(400).json({
             sucesso: false,
             mensagem: 'Usuário não encontrado ou não está conectado'
@@ -116,7 +133,7 @@ app.post('/recados', (request, response) => {
         descricao: recado.descricao
     };
 
-    listaUsuarios[usuarioConectado].recados.push(novoRecado);
+    usuarioConectado.recados.push(novoRecado);
 
     return response.status(201).json({
         sucesso: true,
@@ -124,79 +141,91 @@ app.post('/recados', (request, response) => {
         mensagem: 'Recado encaminhado!'
     });
 });
+
 //LISTAR RECADOS
-app.get('/recados', (request, response) => {
+app.get('/recados', verificarToken, (request, response) => {
+    const usuarioId = request.usuarioId;
+
+    // Encontra o usuário com base no ID
+    const usuarioConectado = listaUsuarios.find((user) => user.id === usuarioId);
+
     // Verifica se o usuário está conectado
-    const usuarioConectado = listaUsuarios.findIndex(user => user.conectado === true);
-    if (usuarioConectado === -1 || !listaUsuarios[usuarioConectado]) {
+    if (!usuarioConectado) {
+        return response.status(400).json({
+            sucesso: false,
+            mensagem: 'Usuário não encontrado ou não está conectado'
+        });
+    }
+
+    const recados = usuarioConectado.recados;
+  
+    return response.status(200).json({
+        sucesso: true,
+        dados: recados,
+        mensagem: 'Recados listados!'
+    });
+});
+
+// ATUALIZAR RECADOS
+app.put('/recados/:id', verificarToken, (request, response) => {
+    const recadoId = request.params.id;
+    const recadoAtualizado = request.body;
+    const usuarioId = request.usuarioId;
+  
+    // Encontra o usuário com base no ID
+    const usuarioConectado = listaUsuarios.find(user => user.id === usuarioId);
+  
+    // Verifica se o usuário está conectado
+    if (!usuarioConectado) {
       return response.status(400).json({
         sucesso: false,
         mensagem: 'Usuário não encontrado ou não está conectado'
       });
     }
-
-    const recados = listaUsuarios[usuarioConectado].recados;
+  
+    usuarioConectado.recados.forEach((recado) => {
+      if (recado.id == recadoId) {
+        recado.titulo = recadoAtualizado.titulo;
+        recado.descricao = recadoAtualizado.descricao;
+      }
+    });
   
     return response.status(200).json({
       sucesso: true,
-      dados: recados,
-      mensagem: 'Recados listados!'
+      dados: recadoAtualizado,
+      mensagem: 'Recado atualizado'
     });
   });
-//ATUALIZAR RECADOS
-app.put('/recados/:id', (request, response) => {
-    const recadoId = request.params.id
-    const recadoAtualizado = request.body
-
+  
+// DELETAR RECADOS
+app.delete('/recados/delete/:id', verificarToken, (request, response) => {
+    const recadoId = request.params.id;
+    const usuarioId = request.usuarioId;
+  
+    // Encontra o usuário com base no ID
+    const usuarioConectado = listaUsuarios.find(user => user.id === usuarioId);
+  
     // Verifica se o usuário está conectado
-    const usuarioConectado = listaUsuarios.findIndex(user => user.conectado === true);
-    if (usuarioConectado === -1 || !listaUsuarios[usuarioConectado]) {
+    if (!usuarioConectado) {
       return response.status(400).json({
         sucesso: false,
         mensagem: 'Usuário não encontrado ou não está conectado'
       });
     }
-
-    listaUsuarios[usuarioConectado].recados.forEach((recado) => {
-        if (recado.id == recadoId) {
-            recado.titulo = recadoAtualizado.titulo
-            recado.descricao = recadoAtualizado.descricao
-        }
-    })
-
-    console.log(usuarioConectado)
-
+  
+    const recadoIndex = usuarioConectado.recados.findIndex(recado => recado.id == recadoId);
+    if (recadoIndex === -1) {
+      return response.status(400).json({
+        sucesso: false,
+        mensagem: 'Recado não encontrado'
+      });
+    }
+  
+    usuarioConectado.recados.splice(recadoIndex, 1);
+  
     return response.status(200).json({
-        sucesso: true,
-        dados: recadoAtualizado,
-        mensagem: 'Recado atualizado'
-    })
-})
-//DELETAR RECADOS
-app.delete('/recados/delete/:id', (request, response) => {
-    const recadoId = request.params.id
-
-        // Verifica se o usuário está conectado
-        const usuarioConectado = listaUsuarios.findIndex(user => user.conectado === true);
-        if (usuarioConectado === -1 || !listaUsuarios[usuarioConectado]) {
-          return response.status(400).json({
-            sucesso: false,
-            mensagem: 'Usuário não encontrado ou não está conectado'
-          });
-        }
-
-        const recadoIndex = listaUsuarios[usuarioConectado].recados.findIndex(recado => recado.id == recadoId);
-        if (recadoIndex === -1) {
-            return response.status(400).json({
-                sucesso: false,
-                mensagem: 'Recado não encontrado'
-            });
-        }
-    
-        listaUsuarios[usuarioConectado].recados.splice(recadoIndex, 1);
-    
-        return response.status(200).json({
-            sucesso: true,
-            mensagem: 'Recado deletado'
-        });
-})
+      sucesso: true,
+      mensagem: 'Recado deletado'
+    });
+  });
+  
