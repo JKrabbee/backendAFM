@@ -3,6 +3,13 @@ import jwt from 'jsonwebtoken';
 const verificarToken = (req, res, next) => {
   const token = req.headers.authorization;
 
+  // Verificar se a rota atual é a rota de criação de usuários
+  if (req.path === '/usuarios/cadastrar') {
+    // Neste caso, não é necessário fornecer um token
+    next();
+    return;
+  }
+
   if (!token) {
     return res.status(401).json({
       sucesso: false,

@@ -71,7 +71,7 @@ app.post('/usuarios/cadastrar', verificarToken, (request, response) => {
 });
 
 //LOGIN
-app.post('/usuarios/login', (request, response) => {
+app.post('/usuarios/login', gerarERenovarToken, (request, response) => {
     const login = request.body;
 
     const usuarioCadastrado = listaUsuarios.find(
