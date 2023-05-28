@@ -100,7 +100,10 @@ app.post('/usuarios/login', (request, response) => {
     return response.status(200).json({
         sucesso: true,
         mensagem: 'Usuário conectado!',
-        token: token
+        dados: {
+            token: token,
+            email: usuarioCadastrado.email
+        }
     });
 });
 
