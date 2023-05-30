@@ -164,11 +164,24 @@ app.get('/recados', verificarToken, (request, response) => {
         });
     }
 
-    const recados = usuarioConectado.recados;
+    const queryParametro = request.query
+
+    const pagina = Number(queryParametro.pagina) || 1
+
+    const limit = 5;
+
+    const inicioDoCorte = (pagina - 1) * limit
+
+    const aux = [...usuarioConectado.recados]
+
+    const resultado = aux.splice(inicioDoCorte, limit)
+
+    const totalPaginas = Math.ceil(usuarioConectado.recados.length / limit)
   
     return response.status(200).json({
         sucesso: true,
-        dados: recados,
+        dados: resultado,
+        totalPaginas: totalPaginas,
         mensagem: 'Recados listados!'
     });
 });
