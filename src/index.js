@@ -1,7 +1,6 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import verificarToken from './middlewares/verificarToken';
-import gerarERenovarToken from './middlewares/gerarToken';
 
 const app = express();
 app.use(express.json());
@@ -62,15 +61,9 @@ app.post('/usuarios/cadastrar', (request, response) => {
 
     listaUsuarios.push(novoUsuario)
 
-    // Gerar o token
-    const token = jwt.sign({ id: novoUsuario.id }, chaveSecreta);
-
-    novoUsuario.token = token;
-
     return response.status(201).json({
         sucesso: true,
-        mensagem: 'Usuario cadastrado com sucesso!',
-        token: token
+        mensagem: 'Usuario cadastrado com sucesso!'
     });
 });
 
@@ -89,15 +82,10 @@ app.post('/usuarios/login', (request, response) => {
         });
     }
 
-    let token = usuarioCadastrado.token; // Obtém o token do usuário cadastrado
+    // Gerar o token
+    const token = jwt.sign({ id: usuarioCadastrado.id }, chaveSecreta);
 
-    // Verifica se o token do usuário foi excluído ou está inválido
-    if (!token) {
-        // Gera um novo token para o usuário
-        token = gerarERenovarToken(usuarioCadastrado.id); 
-        // Atualiza o token no objeto de usuário
-        usuarioCadastrado.token = token;
-    }
+    usuarioCadastrado.token = token;
 
     return response.status(200).json({
         sucesso: true,

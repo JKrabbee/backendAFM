@@ -8,14 +8,6 @@ const verificarToken = (req, res, next) => {
   let token = authorization.split(' ')
   token = token[1]
 
-  // console.log(token);
-  // Verificar se a rota atual é a rota de criação de usuários
-  if (req.path === '/usuarios/cadastrar') {
-    // Neste caso, não é necessário fornecer um token
-    next();
-    return;
-  }
-
   if (!token) {
     return res.status(401).json({
       sucesso: false,
